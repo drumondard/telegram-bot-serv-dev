@@ -67,6 +67,26 @@ systemctl list-units --type=service --state=running
 
 
 -----------------------------------------------------
+>> Criar o serviço único e estável
+sudo nano /etc/systemd/system/telegram-bot-serv-dev.service
+
+>> conteúdo
+[Unit]
+Description=Bot InventarIAr Vtal - DEV
+After=network.target
+
+[Service]
+User=root
+WorkingDirectory=/home/inventario/telegram-bot-serv
+ExecStart=/home/inventario/automacao/py/myenv/bin/python3 /home/inventario/telegram-bot-serv/main.py
+Restart=always
+RestartSec=10
+Environment=PYTHONPATH=/home/inventario/telegram-bot-serv
+
+[Install]
+WantedBy=multi-user.target
+
+-----------------------------------------------------
 Habilite e inicie o novo bot:
 # Recarrega o daemon para ler o novo arquivo de serviço
 sudo systemctl daemon-reload
@@ -84,3 +104,24 @@ systemctl status telegram-bot-serv-dev.service
 
 log
 journalctl -u telegram-bot-serv -n 50 --no-pager
+
+-----------------------------------------------------
+-->> GIT
+git add .
+git commit -m "Limpeza: Removendo arquivos de backup temporários"
+git push
+-----------------------------------------------------
+
+
+sudo systemctl stop telegram-bot-serv
+sudo systemctl stop telegram-bot-serv-dev
+sudo systemctl stop telegram-bot
+sudo systemctl stop telegram-gcs-bot
+sudo systemctl stop inventario-bot
+# Desabilite todos para não subirem sozinhos
+sudo systemctl disable telegram-bot-serv-dev telegram-bot telegram-gcs-bot inventario-bot
+
+# Remove qualquer arquivo de serviço que possa ter ficado para trás
+sudo rm -f /etc/systemd/system/telegram-bot-serv-dev.service
+sudo rm -f /etc/systemd/system/telegram-bot.service
+sudo rm -f /etc/systemd/system/telegram-gcs-bot.service
