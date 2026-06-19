@@ -1,0 +1,21 @@
+
+/home/inventario/telegram-bot-serv
+
+telegram-bot-serv/
+├── __init__.py           <-- OBRIGATÓRIO (arquivo vazio)
+├── main.py
+├── menu.py
+├── rede_ftth.py
+├── fotos_bucket_equip.py
+├── utils/
+│   ├── __init__.py       <-- OBRIGATÓRIO (arquivo vazio)
+│   ├── bq_client.py
+│   └── maps_helper.py
+└── services/
+    ├── __init__.py       <-- OBRIGATÓRIO (arquivo vazio)
+    ├── rede_service.py
+    └── vision_service.py
+
+
+
+    curl -F "url=" https://api.telegram.org/bot8694791486:AAFYTUvEeifHK6Q2yZLfDMUlf0fHgHyn-Vg/setWebhook

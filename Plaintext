@@ -1,0 +1,54 @@
+telegram-to-gcs/
+├── .env                # Armazena variáveis sensíveis (Token do Bot, Nome do Bucket)
+├── bot.py              # Script principal (lógica do bot)
+├── requirements.txt    # Dependências (python-telegram-bot, google-cloud-storage)
+├── service-account.json # SUA CHAVE JSON (NUNCA suba para o Git! Adicione ao .gitignore)
+└── .gitignore          # Define o que NÃO vai para o repositório
+
+
+
+
+telegram-gcs-bot.service
+----------------------------------------------------------------
+# >> sudo nano /etc/systemd/system/telegram-bot-serv.service 
+### Ini, TOML
+
+[Unit]
+Description=Bot Telegram InventarIAr - Orquestrador de Rede
+After=network.target
+
+[Service]
+User=inventario
+Group=inventario
+WorkingDirectory=/home/inventario/telegram-bot-serv
+# Adicione esta linha abaixo:
+Environment=PYTHONPATH=/home/inventario/automacao/scripts_python/telegram_bot
+ExecStart=/home/inventario/automacao/py/myenv/bin/python3 /home/inventario/telegram-bot-serv/main.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+
+
+-----------------------------------------------------
+# >> serviços ATIVOS (Rodando)
+systemctl list-units --type=service --state=running
+
+
+-----------------------------------------------------
+Habilite e inicie o novo bot:
+# Recarrega o daemon para ler o novo arquivo de serviço
+sudo systemctl daemon-reload
+# Habilita para iniciar no boot
+sudo systemctl enable telegram-bot-serv
+# Inicia o serviço agora
+sudo systemctl start telegram-bot-serv
+
+-----------------------------------------------------
+/home/inventario/automacao/py/myenv/bin/python /home/inventario/telegram-bot-serv/main.py
+-----------------------------------------------------
+
+
+log
+journalctl -u telegram-bot-serv -n 50 --no-pager
