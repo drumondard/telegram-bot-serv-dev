@@ -1,43 +1,22 @@
-# /home/inventario/telegram-bot-serv/services/rede_service.py
 
-from google.cloud import bigquery
-import requests
-from google.auth.transport.requests import Request
-
-# Configure o proxy no client do BigQuery
-session = requests.Session()
-session.proxies = {
-    'http': 'http://10.130.12.13:82',
-    'https': 'http://10.130.12.13:82'
-}
+## /home/inventario/telegram-bot-serv/services/rede_service.py
 
 
-def consultar_rede(lon, lat, tipo, client):
-    """Executa a query de rede diretamente no BigQuery."""
-    
-    # Raio de busca de 500 metros
-    raio_busca_metros = 500
-    
-    # Query otimizada com ST_DWithin
-    query = f"""
-        SELECT 
-            cod_est,
-            cd_celula,
-            cd_codido_survey,
-            ds_cdo_name AS id_cdoe,
-            ds_cdo_est_operacional AS status,
-            qtd_hc AS qtd_hp,
-            ROUND(ST_DISTANCE(localizacao_geog, ST_GEOGPOINT({lon}, {lat})), 2) AS distancia_metros,
-            ST_Y(localizacao_geog) AS latitude,
-            ST_X(localizacao_geog) AS longitude
-        FROM 
-            `vtal-inventariorede-prd.telegram_bot.tb_ntw_cdoe_otimizada_v2`
-        WHERE 
-            ST_DWithin(localizacao_geog, ST_GEOGPOINT({lon}, {lat}), {raio_busca_metros})
-        ORDER BY 
-            distancia_metros ASC
-        LIMIT 5;
+def consultar_rede(lon, lat, tipo_rede, client):
     """
+    Roteia para a Procedure correta no BigQuery baseada no tipo de rede.
+    """
+    if "FTTH" in tipo_rede:
+        # Versão otimizada para FTTH conforme seu histórico
+        dataset_procedure = "telegram_bot.get_nearby_cdoe_v2"
+    elif "Backbone" in tipo_rede:
+        dataset_procedure = "telegram_bot.get_nearby_backbone"
+    elif "Acesso" in tipo_rede:
+        dataset_procedure = "telegram_bot.get_nearby_acesso"
+    else:
+        raise ValueError("Tipo de rede não reconhecido.")
+
+    # O CALL executa a procedure armazenada no BQ
+    query = f"CALL `{dataset_procedure}`({lon}, {lat}, 5000)"
     
-    query_job = client.query(query)
-    return query_job.result()
+    return client.query(query).result()

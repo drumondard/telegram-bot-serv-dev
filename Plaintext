@@ -1,16 +1,46 @@
-telegram-to-gcs/
-├── .env                # Armazena variáveis sensíveis (Token do Bot, Nome do Bucket)
-├── bot.py              # Script principal (lógica do bot)
-├── requirements.txt    # Dependências (python-telegram-bot, google-cloud-storage)
-├── service-account.json # SUA CHAVE JSON (NUNCA suba para o Git! Adicione ao .gitignore)
-└── .gitignore          # Define o que NÃO vai para o repositório
 
 
+telegram-bot-serv/
+├── .gitignore
+├── README.md
+├── requirements.txt
+├── main.py                # ponto de entrada do projeto
+├── bot/
+│   ├── __init__.py
+│   ├── bot.py             # lógica principal do Telegram
+│   ├── menu.py            # menus e comandos
+│
+├── services/
+│   ├── __init__.py
+│   ├── gcs_service.py     # upload/download no GCS
+│   ├── rede_service.py
+│
+├── utils/
+│   ├── __init__.py
+│   ├── helpers.py         # funções auxiliares
+│
+├── features/
+│   ├── __init__.py
+│   ├── fotos_bucket.py    # (baseado no seu fotos_bucket_equip.py)
+│   ├── rede_ftth.py       # seu script adaptado
+│
+└── data/
+    └── (se precisar armazenar arquivos temporários)
+
+
+
+>>>>> ESTÁ NO TELEGRAM DE DEV <<<<<
+Use this token to access the HTTP API:
+TELEGRAM_DEV_TOKEN=8969272781:AAHnNdoRYlTgK9sf2qT_qS4sDSLhkE27K0g
 
 
 telegram-gcs-bot.service
 ----------------------------------------------------------------
-# >> sudo nano /etc/systemd/system/telegram-bot-serv.service 
+# >> sudo nano /etc/systemd/system/telegram-bot-serv-dev.service 
+# >> sudo nano /etc/systemd/system/telegram-bot-serv-dev.service
+# >> sudo nano /etc/systemd/system/telegram-bot-serv.service  ( Produção )
+
+
 ### Ini, TOML
 
 [Unit]
@@ -22,7 +52,7 @@ User=inventario
 Group=inventario
 WorkingDirectory=/home/inventario/telegram-bot-serv
 # Adicione esta linha abaixo:
-Environment=PYTHONPATH=/home/inventario/automacao/scripts_python/telegram_bot
+Environment=PYTHONPATH=/home/inventario/telegram-bot-serv
 ExecStart=/home/inventario/automacao/py/myenv/bin/python3 /home/inventario/telegram-bot-serv/main.py
 Restart=always
 RestartSec=5
@@ -41,10 +71,12 @@ Habilite e inicie o novo bot:
 # Recarrega o daemon para ler o novo arquivo de serviço
 sudo systemctl daemon-reload
 # Habilita para iniciar no boot
-sudo systemctl enable telegram-bot-serv
+sudo systemctl enable telegram-bot-serv-dev.service
 # Inicia o serviço agora
-sudo systemctl start telegram-bot-serv
+sudo systemctl start telegram-bot-serv-dev.service
 
+# Verificar o status a qualquer moment
+systemctl status telegram-bot-serv-dev.service
 -----------------------------------------------------
 /home/inventario/automacao/py/myenv/bin/python /home/inventario/telegram-bot-serv/main.py
 -----------------------------------------------------
