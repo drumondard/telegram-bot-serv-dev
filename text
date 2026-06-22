@@ -19,3 +19,9 @@ telegram-bot-serv/
 
 
     curl -F "url=" https://api.telegram.org/bot8694791486:AAFYTUvEeifHK6Q2yZLfDMUlf0fHgHyn-Vg/setWebhook
+
+
+# Para salvar e enviar suas alterações no futuro:
+git add .
+git commit -m "Sua descrição da mudança"
+git push    

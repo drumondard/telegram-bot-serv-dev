@@ -9,11 +9,16 @@ telegram-bot-serv/
 │   ├── __init__.py
 │   ├── bot.py             # lógica principal do Telegram
 │   ├── menu.py            # menus e comandos
+│   ├── handlers/            # <--- NOVO: Controladores das conversas (FSM)
+│   │   ├── __init__.py
+│   │   └── inventario_handler.py # Contém a lógica dos 5 passos (Loc, SAP, Host, Foto, IA)
 │
 ├── services/
 │   ├── __init__.py
 │   ├── gcs_service.py     # upload/download no GCS
 │   ├── rede_service.py
+│   ├── bigquery_service.py  # <--- NOVO: Para gravar no BQ
+│   └── ai_service.py        # <--- NOVO: Integração específica com Gemini
 │
 ├── utils/
 │   ├── __init__.py
@@ -25,7 +30,7 @@ telegram-bot-serv/
 │   ├── rede_ftth.py       # seu script adaptado
 │
 └── data/
-    └── (se precisar armazenar arquivos temporários)
+    └── (se precisar armazenar arquivos temporários / fotos)
 
 
 
@@ -36,24 +41,23 @@ TELEGRAM_DEV_TOKEN=8969272781:AAHnNdoRYlTgK9sf2qT_qS4sDSLhkE27K0g
 
 telegram-gcs-bot.service
 ----------------------------------------------------------------
-# >> sudo nano /etc/systemd/system/telegram-bot-serv-dev.service 
-# >> sudo nano /etc/systemd/system/telegram-bot-serv-dev.service
+# >> sudo nano /etc/systemd/system/telegram-bot-serv-dev.service (Desenvolvimento)
 # >> sudo nano /etc/systemd/system/telegram-bot-serv.service  ( Produção )
 
 
 ### Ini, TOML
 
 [Unit]
-Description=Bot Telegram InventarIAr - Orquestrador de Rede
+Description=Bot Telegram InventarIAr - Agente de Rede - DEV
 After=network.target
 
 [Service]
 User=inventario
 Group=inventario
-WorkingDirectory=/home/inventario/telegram-bot-serv
+WorkingDirectory=/home/inventario/telegram-bot-serv-dev
 # Adicione esta linha abaixo:
-Environment=PYTHONPATH=/home/inventario/telegram-bot-serv
-ExecStart=/home/inventario/automacao/py/myenv/bin/python3 /home/inventario/telegram-bot-serv/main.py
+Environment=PYTHONPATH=/home/inventario/telegram-bot-serv-dev
+ExecStart=/home/inventario/automacao/py/myenv/bin/python3 /home/inventario/telegram-bot-serv-dev/main.py
 Restart=always
 RestartSec=5
 
@@ -65,26 +69,6 @@ WantedBy=multi-user.target
 # >> serviços ATIVOS (Rodando)
 systemctl list-units --type=service --state=running
 
-
------------------------------------------------------
->> Criar o serviço único e estável
-sudo nano /etc/systemd/system/telegram-bot-serv-dev.service
-
->> conteúdo
-[Unit]
-Description=Bot InventarIAr Vtal - DEV
-After=network.target
-
-[Service]
-User=root
-WorkingDirectory=/home/inventario/telegram-bot-serv
-ExecStart=/home/inventario/automacao/py/myenv/bin/python3 /home/inventario/telegram-bot-serv/main.py
-Restart=always
-RestartSec=10
-Environment=PYTHONPATH=/home/inventario/telegram-bot-serv
-
-[Install]
-WantedBy=multi-user.target
 
 -----------------------------------------------------
 Habilite e inicie o novo bot:
@@ -101,14 +85,13 @@ systemctl status telegram-bot-serv-dev.service
 /home/inventario/automacao/py/myenv/bin/python /home/inventario/telegram-bot-serv/main.py
 -----------------------------------------------------
 
-
 log
 journalctl -u telegram-bot-serv -n 50 --no-pager
 
 -----------------------------------------------------
 -->> GIT
 git add .
-git commit -m "Limpeza: Removendo arquivos de backup temporários"
+git commit -m "Atualização para produção"
 git push
 -----------------------------------------------------
 
@@ -125,3 +108,7 @@ sudo systemctl disable telegram-bot-serv-dev telegram-bot telegram-gcs-bot inven
 sudo rm -f /etc/systemd/system/telegram-bot-serv-dev.service
 sudo rm -f /etc/systemd/system/telegram-bot.service
 sudo rm -f /etc/systemd/system/telegram-gcs-bot.service
+
+-----------------------------------------------------
+==>>> Rodar
+/home/inventario/automacao/py/myenv/bin/python3 main.py

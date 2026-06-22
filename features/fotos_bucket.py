@@ -14,7 +14,8 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = await update.message.reply_text("⏳ Processando e enviando...")
     
     # 2. Configuração de diretório temporário
-    temp_dir = "/tmp/fotos_bot"
+    ##temp_dir = "/tmp/fotos_bot"
+    temp_dir = "/home/inventario/telegram-bot-serv/data"
     os.makedirs(temp_dir, exist_ok=True)
     
     try:
@@ -28,7 +29,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # 3. Nomenclatura Profissional: Grupo_Unico_SAP_Host
         id_grupo = context.user_data['id_foto_grupo']
         id_unico = file.file_unique_id
-        id_sap = context.user_data.get('id_sap', 'SEM_SAP')
+        id_sap = context.user_data.get('id_sap', 'SEM_IDSAP')
         host = context.user_data.get('hostname', 'SEM_HOST')
         
         nome_arquivo = f"{id_grupo}_{id_unico}_{id_sap}_{host}.jpg"
