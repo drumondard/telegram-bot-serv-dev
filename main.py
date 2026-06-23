@@ -1,67 +1,32 @@
 import os
 import logging
 from dotenv import load_dotenv
-from telegram.ext import Application, CommandHandler, MessageHandler, filters
-from google.cloud import bigquery
-from google.oauth2 import service_account
+from telegram.ext import Application
 
-# Importação dos módulos da nova arquitetura
-from bot import menu
-from features import rede_ftth, fotos_bucket
-from services.gcs_service import GCSService
+# --- CORREÇÃO: Certifique-se de que este import existe ---
+from services.gcs_service import GCSService 
+from services.bigquery_service import salvar_inventario
+from bot.handlers.inventario_handler import inventario_conv_handler
 
-# Caminho fixo para o arquivo de configuração (.env)
-ENV_PATH = "/home/inventario/automacao/config/.env"
-load_dotenv(ENV_PATH)
-
-# Recupera as variáveis do .env
-CRED_PATH = os.getenv("GCP_CREDENTIALS_SERV_INVENTARIO")
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_DEV_TOKEN")
+# Carregar o .env (ajuste o caminho se necessário)
+load_dotenv("/home/inventario/automacao/config/.env")
 
 def main():
-    # 1. Validação crítica de ambiente
-    if not CRED_PATH or not TELEGRAM_TOKEN:
-        raise EnvironmentError("❌ Erro: Credenciais ou Token não encontrados nas variáveis de ambiente.")
-
-    # 2. Configuração de Logs
-    logging.basicConfig(
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        level=logging.INFO
-    )
-
-    # 3. Inicialização dos Serviços de Infraestrutura
-    try:
-        # Autenticação BigQuery
-        credentials = service_account.Credentials.from_service_account_file(CRED_PATH)
-        bq_client = bigquery.Client(credentials=credentials, project="vtal-inventariorede-prd")
-        
-        # Inicialização Serviço GCS
-        gcs_service = GCSService(CRED_PATH)
-    except Exception as e:
-        logging.error(f"Erro ao inicializar clientes de GCP: {e}")
+    token = os.getenv("TELEGRAM_DEV_TOKEN")
+    if not token:
+        print("ERRO: Token não encontrado.")
         return
 
-    # 4. Inicialização e Injeção de Dependência no Bot
-    app = Application.builder().token(TELEGRAM_TOKEN).build()
-    
-    # Injetamos os serviços no bot_data para uso em qualquer módulo
-    app.bot_data['bq_client'] = bq_client
-    app.bot_data['gcs_service'] = gcs_service
+    app = Application.builder().token(token).build()
 
-    # 5. Registro de Handlers (Orquestração)
+    # Agora o GCSService será reconhecido
+    app.bot_data['gcs_service'] = GCSService(os.getenv("GCP_CREDENTIALS_SERV_INVENTARIO"))
     
-    # Comandos e Menu Principal
-    app.add_handler(CommandHandler("start", menu.start))
-    app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), menu.handle_message))
-
-    # Registro dos Módulos (Features)
-    rede_ftth.registrar_handlers_rede(app)
-    fotos_bucket.registrar_handlers_fotos(app)
-
-    print("🚀 InventarIAr Vtal - Agente 2.0 Operacional.")
+    # Registro do handler
+    app.add_handler(inventario_conv_handler)
     
-    # 6. Execução
-    app.run_polling(drop_pending_updates=True)
+    print("🚀 Bot operacional.")
+    app.run_polling()
 
 if __name__ == '__main__':
     main()

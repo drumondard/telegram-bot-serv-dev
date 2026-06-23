@@ -91,7 +91,7 @@ journalctl -u telegram-bot-serv -n 50 --no-pager
 -----------------------------------------------------
 -->> GIT
 git add .
-git commit -m "Atualização para produção"
+git commit -m "Atualização para Desenvolvimento"
 git push
 -----------------------------------------------------
 
