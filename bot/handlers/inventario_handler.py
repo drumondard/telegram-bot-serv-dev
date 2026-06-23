@@ -1,5 +1,6 @@
+import io
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardRemove
-from telegram.ext import ConversationHandler, MessageHandler, CallbackQueryHandler, filters, CallbackContext
+from telegram.ext import ConversationHandler, MessageHandler, CallbackQueryHandler, filters
 from services.ai_service import extrair_dados_equipamento
 from services.bigquery_service import salvar_inventario
 
@@ -27,7 +28,9 @@ async def receber_hostname(update, context):
 
 async def processar_foto(update, context):
     photo_file = await update.message.photo[-1].get_file()
-    image_bytes = await photo_file.download_as_bytearray()
+    buf = io.BytesIO()
+    await photo_file.download_to_memory(out=buf)
+    image_bytes = buf.getvalue()
     
     dados_ia = extrair_dados_equipamento(image_bytes)
     context.user_data.update({'dados_ia': dados_ia, 'foto_bytes': image_bytes})
@@ -39,15 +42,20 @@ async def processar_foto(update, context):
 async def button_handler(update, context):
     query = update.callback_query
     await query.answer()
-    
     if query.data == 'confirmar':
         gcs = context.bot_data.get('gcs_service')
         nome = f"inventario/{context.user_data['idsap']}_{context.user_data['hostname']}.jpg"
         url = gcs.upload_file("vtal-bucket-inventariorede-prd", context.user_data['foto_bytes'], nome)
-        
-        salvar_inventario({**context.user_data, 'gcs_url': url, 'user_id': update.effective_user.id})
+        salvar_inventario({
+            'user_id': update.effective_user.id,
+            'lat': context.user_data['lat'],
+            'long': context.user_data['long'],
+            'idsap': context.user_data['idsap'],
+            'hostname': context.user_data['hostname'],
+            'gcs_url': url,
+            'dados_ia': context.user_data['dados_ia']
+        })
         await query.edit_message_text("✅ Salvo com sucesso no BigQuery!")
-    
     context.user_data.clear()
     return ConversationHandler.END
 

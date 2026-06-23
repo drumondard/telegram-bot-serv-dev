@@ -82,7 +82,8 @@ sudo systemctl start telegram-bot-serv-dev.service
 # Verificar o status a qualquer moment
 systemctl status telegram-bot-serv-dev.service
 -----------------------------------------------------
-/home/inventario/automacao/py/myenv/bin/python /home/inventario/telegram-bot-serv/main.py
+cd /home/inventario/telegram-bot-serv-dev/
+/home/inventario/automacao/py/myenv/bin/python3 main.py
 -----------------------------------------------------
 
 log
