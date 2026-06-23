@@ -1,3 +1,4 @@
+import os
 from google.cloud import storage
 from google.oauth2 import service_account
 
@@ -11,7 +12,7 @@ class GCSService:
             bucket = self.client.bucket(bucket_name)
             blob = bucket.blob(destination_blob_name)
             
-            # Converte para bytes puro caso receba bytearray
+            # Converte explicitamente para bytes para evitar conflitos com Google SDK
             if isinstance(data, bytearray):
                 data = bytes(data)
                 

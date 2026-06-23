@@ -2,46 +2,54 @@ import os
 import logging
 from dotenv import load_dotenv
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
+from google.cloud import bigquery
 
-# Importações dos módulos
+# Imports dos seus módulos
 from bot import menu
 from bot.handlers.inventario_handler import inventario_conv_handler
-from bot.handlers.rede_handler import rede_conv_handler
+from features.rede_ftth import rede_conv_handler
 from services.gcs_service import GCSService
 
-# Carregamento do arquivo .env
-load_dotenv("/home/inventario/automacao/config/.env")
+# Carrega o arquivo .env do caminho absoluto
+ENV_PATH = "/home/inventario/automacao/config/.env"
+load_dotenv(ENV_PATH)
 
 def main():
-    # Garantir que o ambiente utilize os proxies definidos no .env
-    proxy = os.getenv("HTTPS_PROXY")
-    if proxy:
-        os.environ['https_proxy'] = proxy
-        os.environ['all_proxy'] = proxy
-        print(f"🌐 Proxy configurado: {proxy}")
-
+    # 1. Validação do Token
     token = os.getenv("TELEGRAM_DEV_TOKEN")
     if not token:
-        print("ERRO: Token TELEGRAM_DEV_TOKEN não encontrado no .env.")
+        print(f"ERRO CRÍTICO: Token não encontrado em {ENV_PATH}")
         return
 
-    # Inicialização da aplicação (sem argumentos de proxy complexos)
+    # 2. Configuração da aplicação
     app = Application.builder().token(token).build()
 
-    # Injeção de dependência dos serviços
+    # 3. Injeção de Serviços (BotData)
+    # Certifique-se de que o caminho da credencial GCP esteja correto no seu .env
     cred_path = os.getenv("GCP_CREDENTIALS_SERV_INVENTARIO")
-    if cred_path and os.path.exists(cred_path):
-        app.bot_data['gcs_service'] = GCSService(cred_path)
     
-    # --- REGISTRO DE HANDLERS ---
-    # A ordem aqui define quem "escuta" primeiro.
+    app.bot_data['gcs_service'] = GCSService(cred_path)
     
-    app.add_handler(inventario_conv_handler)
+    # Inicializa e injeta o cliente BigQuery explicitamente
+    try:
+        bq_client = bigquery.Client.from_service_account_json(cred_path)
+        app.bot_data['bq_client'] = bq_client
+        print("✅ BigQuery Client configurado com sucesso.")
+    except Exception as e:
+        print(f"❌ Erro ao configurar BigQuery: {e}")
+        return
+
+    # 4. REGISTRO DE HANDLERS (Ordem de prioridade é fundamental)
+    
+    # A) ConversationHandlers primeiro (Eles capturam apenas quando o fluxo está ativo)
     app.add_handler(rede_conv_handler)
+    app.add_handler(inventario_conv_handler)
+    
+    # B) Comandos e mensagens genéricas (Por último)
     app.add_handler(CommandHandler("start", menu.start))
     app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), menu.handle_message))
     
-    print("🚀 Bot operacional.")
+    print("🚀 Bot operacional e aguardando comandos.")
     app.run_polling()
 
 if __name__ == '__main__':
