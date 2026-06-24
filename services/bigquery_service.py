@@ -1,40 +1,52 @@
+import uuid
+import logging
 from google.cloud import bigquery
-from google.oauth2 import service_account
-import os
-from datetime import datetime
 
-def salvar_inventario(data):
+def salvar_inventario(dados_bot):
     """
-    Insere os dados do inventário na tabela: vtal-inventariorede-prd.telegram_bot.tb_ref_foto_bot
+    Salva inventário no BigQuery. O campo 'loc' deve ser string 
+    no formato 'Lat: -XX, Long: -YY' ou endereço textual.
     """
-    cred_path = os.getenv("GCP_CREDENTIALS_SERV_INVENTARIO")
-    credentials = service_account.Credentials.from_service_account_file(cred_path)
-    client = bigquery.Client(credentials=credentials)
-    
-    # ID da tabela completo
-    table_id = "vtal-inventariorede-prd.telegram_bot.tb_ref_foto_bot"
-    
-    ia_data = data.get('dados_ia', {})
-    
-    # Mapeamento conforme o schema da sua tabela
-    rows_to_insert = [{
-        "equipamento_id": str(data.get('idsap', 'N/A')), # Usando idsap como ID do equipamento
-        "data_criacao": datetime.utcnow().isoformat(),
-        "fabricante": str(ia_data.get('fabricante', 'N/A')),
-        "modelo": str(ia_data.get('modelo', 'N/A')),
-        "funcao": str(ia_data.get('funcao', 'N/A')), # Adicionei campo extra no schema
-        "serial_number": str(ia_data.get('serie', 'N/A')),
-        "latitude": float(data.get('lat', 0.0)),
-        "longitude": float(data.get('long', 0.0)),
-        "precisao_gps": float(data.get('precisao', 0.0)),
-        "gcs_path": str(data.get('gcs_url', 'N/A')),
-        "status_confirmacao": "CONFIRMADO",
-        "usuario_id": str(data.get('user_id', 'N/A')),
-        "confianca_ia": float(ia_data.get('confianca', 0.0))
-    }]
-    
-    errors = client.insert_rows_json(table_id, rows_to_insert)
-    if errors:
-        print(f"❌ Erros ao inserir no BigQuery: {errors}")
-    else:
-        print("✅ Dados salvos com sucesso na tabela tb_ref_foto_bot.")
+    try:
+        client = bigquery.Client(project="vtal-inventariorede-prd")
+        table_id = "vtal-inventariorede-prd.telegram_bot.tb_ref_foto_bot"
+        
+        # Converter Lat/Long para WKT (GEOGRAPHY)
+        # BigQuery espera POINT(longitude latitude)
+        loc_str = dados_bot.get('loc', 'N/A')
+        wkt = "POINT(0 0)" # Valor fallback
+        if "Lat:" in loc_str and "Long:" in loc_str:
+            try:
+                # Extrai números: "Lat: -22.88, Long: -43.46" -> POINT(-43.46 -22.88)
+                parts = loc_str.replace("Lat:", "").replace("Long:", "").split(",")
+                lat = parts[0].strip()
+                lon = parts[1].strip()
+                wkt = f"POINT({lon} {lat})"
+            except:
+                pass
+        
+        row_to_insert = {
+            "id_registro": str(uuid.uuid4()),
+            "user_id": int(dados_bot.get('user_id', 0)),
+            "idsap": str(dados_bot.get('idsap', 'N/A')),
+            "hostname": str(dados_bot.get('hostname', 'N/A')),
+            "localizacao": wkt, 
+            "fabricante": str(dados_bot.get('dados_ia', {}).get('fabricante', 'N/A')),
+            "modelo": str(dados_bot.get('dados_ia', {}).get('modelo', 'N/A')),
+            "funcao": str(dados_bot.get('dados_ia', {}).get('funcao', 'N/A')),
+            "serial_number": str(dados_bot.get('dados_ia', {}).get('serial_number', 'N/A')),
+            "gcs_url": str(dados_bot.get('gcs_url', 'N/A'))
+        }
+
+        errors = client.insert_rows_json(table_id, [row_to_insert])
+        
+        if errors:
+            logging.error(f"Erro ao inserir linhas: {errors}")
+            return False
+        
+        logging.info("✅ Inventário inserido com sucesso na tabela documentada.")
+        return True
+
+    except Exception as e:
+        logging.error(f"❌ Erro crítico no BigQuery: {e}")
+        return False

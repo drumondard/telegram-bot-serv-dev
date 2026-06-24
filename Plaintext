@@ -113,3 +113,24 @@ sudo rm -f /etc/systemd/system/telegram-gcs-bot.service
 -----------------------------------------------------
 ==>>> Rodar
 /home/inventario/automacao/py/myenv/bin/python3 main.py
+
+-----------------------------------------------------
+criar a tabela na gcp
+
+-- 1. Apagar a tabela antiga
+DROP TABLE IF EXISTS `vtal-inventariorede-prd.telegram_bot.tb_ref_foto_bot`;
+
+-- 2. Criar a tabela nova com a estrutura e descrição adequadas
+CREATE TABLE `vtal-inventariorede-prd.telegram_bot.tb_ref_foto_bot` (
+    id_registro STRING OPTIONS(description="Identificador único (UUID)"),
+    user_id INT64 OPTIONS(description="ID do usuário no Telegram"),
+    data_envio TIMESTAMP DEFAULT CURRENT_TIMESTAMP() OPTIONS(description="Data e hora do registro"),
+    idsap STRING OPTIONS(description="Identificador no SAP"),
+    hostname STRING OPTIONS(description="Hostname do dispositivo"),
+    localizacao GEOGRAPHY OPTIONS(description="Localização geográfica em formato WKT"),
+    fabricante STRING OPTIONS(description="Fabricante identificado via IA"),
+    modelo STRING OPTIONS(description="Modelo do equipamento"),
+    funcao STRING OPTIONS(description="Função do ativo na rede"),
+    serial_number STRING OPTIONS(description="Número de série extraído"),
+    gcs_url STRING OPTIONS(description="Caminho gs:// para a foto no Bucket")
+) OPTIONS(description="Tabela de inventário de ativos com suporte a análise geográfica");
