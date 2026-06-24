@@ -1,3 +1,4 @@
+'''
 import logging
 from google.cloud import storage
 
@@ -23,3 +24,23 @@ class GCSService:
         except Exception as e:
             logging.error(f"❌ Erro ao enviar arquivo para o GCS: {e}")
             raise e
+'''
+import logging
+from google.cloud import storage
+
+class GCSService:
+    def __init__(self, credentials):
+        self.client = storage.Client(credentials=credentials, project="vtal-inventariorede-prd")
+
+    def upload_file(self, bucket_name: str, data, destination_blob_name: str) -> str:
+        try:
+            if isinstance(data, (bytearray, memoryview)):
+                data = bytes(data)
+            
+            bucket = self.client.bucket(bucket_name)
+            blob = bucket.blob(destination_blob_name)
+            blob.upload_from_string(data, content_type='image/jpeg')
+            return f"gs://{bucket_name}/{destination_blob_name}"
+        except Exception as e:
+            logging.error(f"❌ Erro GCS: {e}")
+            raise e            
