@@ -15,7 +15,7 @@ def extrair_dados_equipamento(image_bytes):
         "Se não encontrar algum dado, preencha com 'N/A'."
     )
 
-    modelos_para_tentar = ['gemini-3.5-flash', 'gemini-2.0-flash', 'gemini-flash-latest']
+    modelos_para_tentar = ['gemini-3.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-flash-latest']
     
     for modelo in modelos_para_tentar:
         try:
