@@ -59,7 +59,8 @@ def extrair_dados_equipamento(image_bytes: bytes) -> dict:
     
     # 2. Lista atualizada de modelos (os modelos 1.5 antigos e inconsistentes foram removidos/corrigidos)
     # Colocamos o gemini-2.5-flash como principal (mais rápido, barato e moderno)
-    modelos = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-pro']
+    ###modelos = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-pro']
+    modelos = ['gemini-2.5-flash']
     
     for modelo in modelos:
         try:
